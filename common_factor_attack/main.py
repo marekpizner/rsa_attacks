@@ -104,6 +104,16 @@ def create_privete_key(public_key, q):
     private_key = rsa.RSAPrivateNumbers(p, q, d, dmp1, dmq1, iqmp, public_key.public_numbers()).private_key()
     return private_key
 
+def removeDuplicates(lst): 
+    visited = set()
+    ret_value = []
+
+    for i, x in lst:
+        if i not in visited:
+            visited.add(i)
+            ret_value.append((i, x))
+
+    return ret_value
 
 def crack(file_path):
     keys = read_public_keys(file_path)
@@ -111,16 +121,24 @@ def crack(file_path):
 
     private_keys = []
     for k in keys_with_same_pq:
-        private_key = create_privete_key(k['key_a'], k['gcd'])
-        # print(private_key.private_numbers())
-        ciphertext = read_message(file_path + k['file_id_a'] + '.bin')
-        # print(ciphertext)
+        private_key_a = create_privete_key(k['key_a'], k['gcd'])
+        private_keys.append((int(k['file_id_a']), private_key_a))
 
-        plaintext = private_key.decrypt(
+        private_key_b = create_privete_key(k['key_b'], k['gcd'])
+        private_keys.append((int(k['file_id_b']), private_key_b))
+
+    
+    private_keys = removeDuplicates(private_keys)
+    private_keys.sort(key=lambda tup: tup[0])
+   
+    
+    for i, k in private_keys:    
+        ciphertext = read_message(file_path + str(i) + '.bin')
+        plaintext = k.decrypt(
             ciphertext,
             padding.PKCS1v15()
         )
-        print(plaintext)
+        print(str(plaintext))
 
 
 if __name__ == "__main__":
